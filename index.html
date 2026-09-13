@@ -137,33 +137,61 @@
         // Inicializar Mensajería (Notificaciones)
         const messaging = firebase.messaging();
 
-        // Función para pedir permiso y guardar el token del celular
-        function activarNotificaciones() {
-            Notification.requestPermission().then((permission) => {
-                if (permission === 'granted') {
-                    console.log('Permiso concedido');
-                    return messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w' });
+        // Función para verificar y activar/desactivar notificaciones
+        function verificarNotificaciones() {
+            messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w' }).then((currentToken) => {
+                if (currentToken) {
+                    // Ya tiene token, entonces cambiamos a "Desactivar"
+                    let btn = document.getElementById('btn-notif');
+                    btn.innerText = "Desactivar Avisos";
+                    btn.style.background = "#27ae60"; // Verde
+                    btn.setAttribute("data-estado", "activo");
+                    btn.setAttribute("data-token", currentToken);
                 } else {
-                    alert("Debes permitir las notificaciones para recibir avisos.");
-                }
-            }).then((token) => {
-                if (token) {
-                    // Guardar el token en la base de datos de Firebase
-                    db.collection("tokens").doc(token).set({
-                        token: token
-                    }).then(() => {
-                        alert("¡Notificaciones activadas! Ya recibirás avisos en este dispositivo.");
-                        let btn = document.getElementById('btn-notif');
-                        btn.innerText = "Avisos activos ✓";
-                        btn.style.background = "#27ae60";
-                        btn.disabled = true;
-                    }).catch((error) => {
-                        console.error("Error al guardar token:", error);
-                    });
+                    // No tiene token, dejamos en "Activar"
+                    let btn = document.getElementById('btn-notif');
+                    btn.innerText = "Activar Avisos";
+                    btn.style.background = "#e74c3c"; // Rojo
+                    btn.setAttribute("data-estado", "inactivo");
                 }
             }).catch((err) => {
-                console.log('Error al pedir permiso', err);
+                console.log('Error al obtener token', err);
             });
+        }
+
+        // Función principal del botón
+        function activarNotificaciones() {
+            let btn = document.getElementById('btn-notif');
+            let estado = btn.getAttribute("data-estado");
+
+            if (estado === "activo") {
+                // DESACTIVAR
+                let token = btn.getAttribute("data-token");
+                messaging.deleteToken(token).then(() => {
+                    db.collection("tokens").doc(token).delete().then(() => {
+                        alert("Notificaciones desactivadas.");
+                        verificarNotificaciones(); // Vuelve a revisar y pone el botón rojo
+                    });
+                });
+            } else {
+                // ACTIVAR
+                Notification.requestPermission().then((permission) => {
+                    if (permission === 'granted') {
+                        return messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMaYx8yDRSRhQMPnX5w' });
+                    } else {
+                        alert("Debes permitir las notificaciones para recibir avisos.");
+                    }
+                }).then((token) => {
+                    if (token) {
+                        db.collection("tokens").doc(token).set({ token: token }).then(() => {
+                            alert("¡Notificaciones activadas! Ya recibirás avisos en este dispositivo.");
+                            verificarNotificaciones(); // Vuelve a revisar y pone el botón verde
+                        });
+                    }
+                }).catch((err) => {
+                    console.log('Error', err);
+                });
+            }
         }
 
         // 3. Función para cambiar de pestaña
@@ -243,6 +271,7 @@
         // 6. Empezar a cargar las publicaciones cuando la página carga
         window.onload = function() {
             cargarPublicaciones();
+            verificarNotificaciones(); // Revisa si ya están activas al entrar
         };
     </script>
 
