@@ -222,8 +222,15 @@
                     
                     // Si hay link de imagen
                     if(pub.imagenUrl) {
-                        html += `<img src="${pub.imagenUrl}" alt="Imagen">`;
+                        // Código para convertir link de Google Drive a imagen directa
+                        let imgSrc = pub.imagenUrl;
+                        const match = pub.imagenUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (match && match[1]) {
+                            imgSrc = `https://drive.google.com/uc?export=view&id=${match[1]}`;
+                        }
+                        html += `<img src="${imgSrc}" alt="Imagen" style="max-width:100%; border-radius:5px; margin-top:10px;">`;
                     }
+                    
                     // Si hay link de video
                     if(pub.videoUrl) {
                         html += `<iframe src="${pub.videoUrl}"></iframe>`;
