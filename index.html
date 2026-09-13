@@ -120,7 +120,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 
     <script>
-        // 1. Configuración de Firebase (Tus llaves ya integradas y arregladas)
+        // 1. Configuración de Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyBC1z1-LWxPMExp2SmxZhIQFpL2cYjz9KM",
             authDomain: "pwa-escolar-7a9d2.firebaseapp.com",
@@ -133,8 +133,6 @@
         // 2. Inicializar Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-                
-        // Inicializar Mensajería (Notificaciones)
         const messaging = firebase.messaging();
 
         // Función para verificar y activar/desactivar notificaciones
@@ -208,7 +206,6 @@
         // 4. Función para leer las publicaciones de Firebase
         function cargarPublicaciones() {
             db.collection("publicaciones").orderBy("fecha", "desc").onSnapshot((querySnapshot) => {
-                // Limpiamos los 6 contenedores
                 document.getElementById('lista-inicio').innerHTML = '';
                 document.getElementById('lista-escuela').innerHTML = '';
                 document.getElementById('lista-docentes').innerHTML = '';
@@ -220,46 +217,55 @@
                     const pub = doc.data();
                     let html = `<div class="publicacion"><p>${pub.texto}</p>`;
                     
-                    // Si hay link de imagen
+                    // Si hay link de imagen (Convierte link de Drive a directo)
                     if(pub.imagenUrl) {
-                        // Código para convertir link de Google Drive a imagen directa
                         let imgSrc = pub.imagenUrl;
                         const match = pub.imagenUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
                         if (match && match[1]) {
                             imgSrc = `https://drive.google.com/uc?export=view&id=${match[1]}`;
                         }
-                        html += `<img src="${imgSrc}" alt="Imagen" style="max-width:100%; border-radius:5px; margin-top:10px;">`;
+                        html += `<img src="${imgSrc}" alt="Imagen">`;
                     }
                     
-                    // Si hay link de video
+                    // Si hay link de video (Convierte link de YouTube o Drive a embedible)
                     if(pub.videoUrl) {
-                        html += `<iframe src="${pub.videoUrl}"></iframe>`;
+                        let videoSrc = pub.videoUrl;
+                        // YouTube
+                        let ytMatch = pub.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/);
+                        if (ytMatch && ytMatch[1]) {
+                            videoSrc = `https://www.youtube.com/embed/${ytMatch[1]}`;
+                        } else {
+                            // Google Drive
+                            let driveMatch = pub.videoUrl.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+                            if (driveMatch && driveMatch[1]) {
+                                videoSrc = `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+                            }
+                        }
+                        html += `<iframe src="${videoSrc}" allowfullscreen></iframe>`;
                     }
+                    
                     // Si hay link de PDF
                     if(pub.pdfUrl) {
-                        html += `<p><a href="${pub.pdfUrl}" target="_blank">Ver Documento PDF</a></p>`;
+                        let pdfSrc = pub.pdfUrl;
+                        const pdfMatch = pub.pdfUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+                        if (pdfMatch && pdfMatch[1]) {
+                            pdfSrc = `https://drive.google.com/file/d/${pdfMatch[1]}/preview`;
+                        }
+                        html += `<iframe src="${pdfSrc}" style="height: 500px;"></iframe>`;
                     }
                     html += `</div>`;
 
-                    // Poner la publicacion en la seccion correcta (las 6 opciones)
-                    if(pub.seccion === 'inicio') {
-                        document.getElementById('lista-inicio').innerHTML += html;
-                    } else if(pub.seccion === 'escuela') {
-                        document.getElementById('lista-escuela').innerHTML += html;
-                    } else if(pub.seccion === 'docentes') {
-                        document.getElementById('lista-docentes').innerHTML += html;
-                    } else if(pub.seccion === 'avisos') {
-                        document.getElementById('lista-avisos').innerHTML += html;
-                    } else if(pub.seccion === 'artisticas') {
-                        document.getElementById('lista-artisticas').innerHTML += html;
-                    } else if(pub.seccion === 'valores') {
-                        document.getElementById('lista-valores').innerHTML += html;
-                    }
+                    if(pub.seccion === 'inicio') document.getElementById('lista-inicio').innerHTML += html;
+                    else if(pub.seccion === 'escuela') document.getElementById('lista-escuela').innerHTML += html;
+                    else if(pub.seccion === 'docentes') document.getElementById('lista-docentes').innerHTML += html;
+                    else if(pub.seccion === 'avisos') document.getElementById('lista-avisos').innerHTML += html;
+                    else if(pub.seccion === 'artisticas') document.getElementById('lista-artisticas').innerHTML += html;
+                    else if(pub.seccion === 'valores') document.getElementById('lista-valores').innerHTML += html;
                 });
             });
         }
 
-        // 5. Registrar el Service Worker (Para que funcione como App)
+        // 5. Registrar el Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('/service-worker.js')
@@ -274,7 +280,7 @@
         // 6. Empezar a cargar las publicaciones cuando la página carga
         window.onload = function() {
             cargarPublicaciones();
-            verificarNotificaciones(); // Revisa si ya están activas al entrar
+            verificarNotificaciones();
         };
     </script>
 
