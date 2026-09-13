@@ -141,17 +141,15 @@
         function verificarNotificaciones() {
             messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w' }).then((currentToken) => {
                 if (currentToken) {
-                    // Ya tiene token, entonces cambiamos a "Desactivar"
                     let btn = document.getElementById('btn-notif');
                     btn.innerText = "Desactivar Avisos";
-                    btn.style.background = "#27ae60"; // Verde
+                    btn.style.background = "#27ae60";
                     btn.setAttribute("data-estado", "activo");
                     btn.setAttribute("data-token", currentToken);
                 } else {
-                    // No tiene token, dejamos en "Activar"
                     let btn = document.getElementById('btn-notif');
                     btn.innerText = "Activar Avisos";
-                    btn.style.background = "#e74c3c"; // Rojo
+                    btn.style.background = "#e74c3c";
                     btn.setAttribute("data-estado", "inactivo");
                 }
             }).catch((err) => {
@@ -165,19 +163,17 @@
             let estado = btn.getAttribute("data-estado");
 
             if (estado === "activo") {
-                // DESACTIVAR
                 let token = btn.getAttribute("data-token");
                 messaging.deleteToken(token).then(() => {
                     db.collection("tokens").doc(token).delete().then(() => {
                         alert("Notificaciones desactivadas.");
-                        verificarNotificaciones(); // Vuelve a revisar y pone el botón rojo
+                        verificarNotificaciones();
                     });
                 });
             } else {
-                // ACTIVAR
                 Notification.requestPermission().then((permission) => {
                     if (permission === 'granted') {
-                        return messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMaYx8yDRSRhQMPnX5w' });
+                        return messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w' });
                     } else {
                         alert("Debes permitir las notificaciones para recibir avisos.");
                     }
@@ -185,7 +181,7 @@
                     if (token) {
                         db.collection("tokens").doc(token).set({ token: token }).then(() => {
                             alert("¡Notificaciones activadas! Ya recibirás avisos en este dispositivo.");
-                            verificarNotificaciones(); // Vuelve a revisar y pone el botón verde
+                            verificarNotificaciones();
                         });
                     }
                 }).catch((err) => {
