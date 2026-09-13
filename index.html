@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Escuela PWA</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+        }
+        header {
+            background-color: #2c3e50;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+        nav {
+            display: flex;
+            justify-content: space-around;
+            background-color: #34495e;
+            padding: 10px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        nav button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            padding: 5px;
+        }
+        nav button.active {
+            border-bottom: 2px solid #e74c3c;
+            font-weight: bold;
+        }
+        .content-section {
+            display: none;
+            padding: 20px;
+        }
+        .active-section {
+            display: block;
+        }
+        /* Estilo para las publicaciones */
+        .publicacion {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .publicacion img {
+            max-width: 100%;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .publicacion iframe {
+            width: 100%;
+            height: 200px;
+            border: none;
+            margin-top: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Mi Escuela</h1>
+        <button id="btn-notif" onclick="activarNotificaciones()" style="background:#e74c3c; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer;">Activar Avisos</button>
+    </header>
+
+    <nav>
+        <button onclick="showSection('inicio', this)" class="active">INICIO</button>
+        <button onclick="showSection('escuela', this)">ESCUELA</button>
+        <button onclick="showSection('docentes', this)">DOCENTES</button>
+        <button onclick="showSection('avisos', this)">AVISOS</button>
+        <button onclick="showSection('artisticas', this)">ARTISTICAS</button>
+        <button onclick="showSection('valores', this)">VALORES</button>
+    </nav>
+
+    <div id="inicio" class="content-section active-section">
+        <h2>Bienvenidos</h2>
+        <div id="lista-inicio"></div>
+    </div>
+
+    <div id="escuela" class="content-section">
+        <h2>Nuestra Escuela</h2>
+        <div id="lista-escuela"></div>
+    </div>
+
+    <div id="docentes" class="content-section">
+        <h2>Personal Docente</h2>
+        <div id="lista-docentes"></div>
+    </div>
+
+    <div id="avisos" class="content-section">
+        <h2>Avisos Importantes</h2>
+        <div id="lista-avisos"></div>
+    </div>
+
+    <div id="artisticas" class="content-section">
+        <h2>Actividades Artísticas</h2>
+        <div id="lista-artisticas"></div>
+    </div>
+
+    <div id="valores" class="content-section">
+        <h2>Valores</h2>
+        <div id="lista-valores"></div>
+    </div>
+
+    <!-- SDK de Firebase (Necesario para conectar) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+
+    <script>
+        // 1. Configuración de Firebase (Tus llaves ya integradas y arregladas)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBC1z1-LWxPMExp2SmxZhIQFpL2cYjz9KM",
+            authDomain: "pwa-escolar-7a9d2.firebaseapp.com",
+            projectId: "pwa-escolar-7a9d2",
+            storageBucket: "pwa-escolar-7a9d2.firebasestorage.app",
+            messagingSenderId: "444090664948",
+            appId: "1:444090664948:web:521b7ead26b987c2a79ba1"
+        };
+
+        // 2. Inicializar Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+                
+        // Inicializar Mensajería (Notificaciones)
+        const messaging = firebase.messaging();
+
+        // Función para pedir permiso y guardar el token del celular
+        function activarNotificaciones() {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('Permiso concedido');
+                    return messaging.getToken({ vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w' });
+                } else {
+                    alert("Debes permitir las notificaciones para recibir avisos.");
+                }
+            }).then((token) => {
+                if (token) {
+                    // Guardar el token en la base de datos de Firebase
+                    db.collection("tokens").doc(token).set({
+                        token: token
+                    }).then(() => {
+                        alert("¡Notificaciones activadas! Ya recibirás avisos en este dispositivo.");
+                        let btn = document.getElementById('btn-notif');
+                        btn.innerText = "Avisos activos ✓";
+                        btn.style.background = "#27ae60";
+                        btn.disabled = true;
+                    }).catch((error) => {
+                        console.error("Error al guardar token:", error);
+                    });
+                }
+            }).catch((err) => {
+                console.log('Error al pedir permiso', err);
+            });
+        }
+
+        // 3. Función para cambiar de pestaña
+        function showSection(sectionId, buttonElement) {
+            let sections = document.querySelectorAll('.content-section');
+            sections.forEach(function(sec) {
+                sec.classList.remove('active-section');
+            });
+            document.getElementById(sectionId).classList.add('active-section');
+
+            let buttons = document.querySelectorAll('nav button');
+            buttons.forEach(function(btn) {
+                btn.classList.remove('active');
+            });
+            buttonElement.classList.add('active');
+        }
+
+        // 4. Función para leer las publicaciones de Firebase
+        function cargarPublicaciones() {
+            db.collection("publicaciones").orderBy("fecha", "desc").onSnapshot((querySnapshot) => {
+                // Limpiamos los 6 contenedores
+                document.getElementById('lista-inicio').innerHTML = '';
+                document.getElementById('lista-escuela').innerHTML = '';
+                document.getElementById('lista-docentes').innerHTML = '';
+                document.getElementById('lista-avisos').innerHTML = '';
+                document.getElementById('lista-artisticas').innerHTML = '';
+                document.getElementById('lista-valores').innerHTML = '';
+
+                querySnapshot.forEach((doc) => {
+                    const pub = doc.data();
+                    let html = `<div class="publicacion"><p>${pub.texto}</p>`;
+                    
+                    // Si hay link de imagen
+                    if(pub.imagenUrl) {
+                        html += `<img src="${pub.imagenUrl}" alt="Imagen">`;
+                    }
+                    // Si hay link de video
+                    if(pub.videoUrl) {
+                        html += `<iframe src="${pub.videoUrl}"></iframe>`;
+                    }
+                    // Si hay link de PDF
+                    if(pub.pdfUrl) {
+                        html += `<p><a href="${pub.pdfUrl}" target="_blank">Ver Documento PDF</a></p>`;
+                    }
+                    html += `</div>`;
+
+                    // Poner la publicacion en la seccion correcta (las 6 opciones)
+                    if(pub.seccion === 'inicio') {
+                        document.getElementById('lista-inicio').innerHTML += html;
+                    } else if(pub.seccion === 'escuela') {
+                        document.getElementById('lista-escuela').innerHTML += html;
+                    } else if(pub.seccion === 'docentes') {
+                        document.getElementById('lista-docentes').innerHTML += html;
+                    } else if(pub.seccion === 'avisos') {
+                        document.getElementById('lista-avisos').innerHTML += html;
+                    } else if(pub.seccion === 'artisticas') {
+                        document.getElementById('lista-artisticas').innerHTML += html;
+                    } else if(pub.seccion === 'valores') {
+                        document.getElementById('lista-valores').innerHTML += html;
+                    }
+                });
+            });
+        }
+
+        // 5. Registrar el Service Worker (Para que funcione como App)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/service-worker.js')
+                    .then(function(registration) {
+                        console.log('ServiceWorker registrado con éxito');
+                    }, function(err) {
+                        console.log('Error al registrar el ServiceWorker: ', err);
+                    });
+            });
+        }
+
+        // 6. Empezar a cargar las publicaciones cuando la página carga
+        window.onload = function() {
+            cargarPublicaciones();
+        };
+    </script>
+
+</body>
+</html>
