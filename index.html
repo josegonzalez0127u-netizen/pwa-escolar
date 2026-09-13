@@ -95,7 +95,11 @@
                 messaging.deleteToken(token).then(() => {
                     db.collection("tokens").doc(token).delete().then(() => {
                         alert("Notificaciones desactivadas.");
-                        verificarNotificaciones();
+                        // Forzamos el botón a rojo inmediatamente
+                        btn.innerText = "Activar Avisos";
+                        btn.style.background = "#e74c3c";
+                        btn.setAttribute("data-estado", "inactivo");
+                        btn.removeAttribute("data-token");
                     });
                 });
             } else {
