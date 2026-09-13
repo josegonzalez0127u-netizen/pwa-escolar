@@ -24,7 +24,6 @@
     <header>
         <h2>Escuela Primaria<br>"Prof. José González Villaseñor"</h2>
         <div class="header-buttons">
-            <button id="btn-notif" onclick="activarNotificaciones()" class="btn-custom" style="background:#e74c3c;">Activar Avisos</button>
             <button id="btn-install" onclick="instalarApp()" class="btn-custom" style="background:#2980b9; display:none;">Instalar App</button>
         </div>
     </header>
@@ -43,9 +42,9 @@
     <div id="artisticas" class="content-section"><h2>Actividades Artísticas</h2><div id="lista-artisticas"></div></div>
     <div id="valores" class="content-section"><h2>Valores</h2><div id="lista-valores"></div></div>
 
+    <!-- Solo necesitamos Firestore para leer las publicaciones -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
     <script>
         const firebaseConfig = {
             apiKey: "AIzaSyBC1z1-LWxPMExp2SmxZhIQFpL2cYjz9KM",
@@ -57,71 +56,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-        const messaging = firebase.messaging();
 
         let deferredPrompt;
-        let swRegistration = null; // Aquí guardaremos el service worker
-
-        function verificarNotificaciones() {
-            if (!swRegistration) return; // Si no hay SW, no hace nada
-            messaging.getToken({ 
-                vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w',
-                serviceWorkerRegistration: swRegistration // Le pasamos el SW que ya registró
-            }).then((currentToken) => {
-                if (currentToken) {
-                    let btn = document.getElementById('btn-notif');
-                    btn.innerText = "Desactivar Avisos";
-                    btn.style.background = "#27ae60";
-                    btn.setAttribute("data-estado", "activo");
-                    btn.setAttribute("data-token", currentToken);
-                } else {
-                    let btn = document.getElementById('btn-notif');
-                    btn.innerText = "Activar Avisos";
-                    btn.style.background = "#e74c3c";
-                    btn.setAttribute("data-estado", "inactivo");
-                }
-            }).catch((err) => { console.log('Error al obtener token', err); });
-        }
-
-        function activarNotificaciones() {
-            if (!swRegistration) {
-                alert("Error: El Service Worker no se ha cargado todavía.");
-                return;
-            }
-            let btn = document.getElementById('btn-notif');
-            let estado = btn.getAttribute("data-estado");
-            if (estado === "activo") {
-                let token = btn.getAttribute("data-token");
-                messaging.deleteToken(token).then(() => {
-                    db.collection("tokens").doc(token).delete().then(() => {
-                        alert("Notificaciones desactivadas.");
-                        // Forzamos el botón a rojo inmediatamente
-                        btn.innerText = "Activar Avisos";
-                        btn.style.background = "#e74c3c";
-                        btn.setAttribute("data-estado", "inactivo");
-                        btn.removeAttribute("data-token");
-                    });
-                });
-            } else {
-                Notification.requestPermission().then((permission) => {
-                    if (permission === 'granted') {
-                        return messaging.getToken({ 
-                            vapidKey: 'BFrDylIHLkZkbn6lpanNDGEZ4n_CLbNMWRRY2WpPbrp-i8pHDWK33cThZ8PrgMNTCuRMCRaYx8yDRSRhQMPnX5w',
-                            serviceWorkerRegistration: swRegistration // Le pasamos el SW aquí también
-                        });
-                    } else {
-                        alert("Debes permitir las notificaciones para recibir avisos.");
-                    }
-                }).then((token) => {
-                    if (token) {
-                        db.collection("tokens").doc(token).set({ token: token }).then(() => {
-                            alert("¡Notificaciones activadas! Ya recibirás avisos en este dispositivo.");
-                            verificarNotificaciones();
-                        });
-                    }
-                }).catch((err) => { console.log('Error', err); });
-            }
-        }
 
         function showSection(sectionId, buttonElement) {
             let sections = document.querySelectorAll('.content-section');
@@ -186,20 +122,11 @@
             });
         }
 
-        // Registro de Service Workers (Arreglado)
+        // Registro del Service Worker principal (para que se pueda instalar)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('./service-worker.js')
-                    .then(function(registration) {
-                        console.log('ServiceWorker principal registrado');
-                        // Registramos el de Firebase
-                        return navigator.serviceWorker.register('./firebase-messaging-sw.js', { scope: './' });
-                    })
-                    .then(function(registration) {
-                        console.log('ServiceWorker de Firebase registrado');
-                        swRegistration = registration; // Lo guardamos en la variable
-                        verificarNotificaciones(); // Ahora sí, revisamos las notificaciones
-                    })
+                    .then(function(registration) { console.log('ServiceWorker registrado con éxito'); })
                     .catch(function(err) { console.log('Error al registrar ServiceWorker: ', err); });
             });
         }
