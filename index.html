@@ -5,54 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Escuela Primaria Prof. José González Villaseñor</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Íconos de Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
-        header { background-color: #2c3e50; color: white; padding: 15px; text-align: center; }
-        .header-buttons { margin-top: 10px; }
-        nav { display: flex; justify-content: space-around; background-color: #34495e; padding: 10px 0; position: sticky; top: 0; z-index: 100; }
-        nav button { background: none; border: none; color: white; font-size: 12px; cursor: pointer; padding: 5px; }
+        /* Variables para Modo Claro y Oscuro */
+        :root {
+            --bg-color: #f4f4f9;
+            --card-bg: white;
+            --text-color: #2c3e50;
+            --header-bg: #2c3e50;
+            --header-text: white;
+            --nav-bg: #34495e;
+        }
+        body.dark-mode {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #ffffff;
+            --header-bg: #0d0d0d;
+            --header-text: #ffffff;
+            --nav-bg: #242424;
+        }
+
+        body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: var(--bg-color); color: var(--text-color); transition: background-color 0.3s, color 0.3s; }
+        
+        /* Encabezado */
+        header { background-color: var(--header-bg); color: var(--header-text); padding: 15px; text-align: center; position: relative; }
+        .logo { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-top: 10px; border: 2px solid white; }
+        .header-icons { margin-top: 15px; display: flex; justify-content: center; gap: 15px; }
+        .header-icons a { color: white; font-size: 20px; text-decoration: none; }
+        .btn-dark-mode { position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 24px; cursor: pointer; }
+
+        /* Menú */
+        nav { display: flex; justify-content: space-around; background-color: var(--nav-bg); padding: 10px 0; position: sticky; top: 0; z-index: 100; }
+        nav button { background: none; border: none; color: var(--header-text); font-size: 12px; cursor: pointer; padding: 5px; }
         nav button.active { border-bottom: 2px solid #e74c3c; font-weight: bold; }
+        
         .content-section { display: none; padding: 20px; }
         .active-section { display: block; }
         
-        /* Estilo de la publicación */
-        .publicacion { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .titulo-publicacion { font-size: 1.3em; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; }
+        /* Publicaciones */
+        .publicacion { background-color: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .titulo-publicacion { font-size: 1.3em; font-weight: bold; margin: 0 0 10px 0; }
+        .etiqueta-fijado { background: #e74c3c; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; margin-left: 10px; vertical-align: middle; }
         
-        /* Carrusel de imágenes (Mejorado) */
-        .carrusel { 
-            display: flex; 
-            overflow-x: auto; 
-            scroll-snap-type: x mandatory; 
-            -webkit-overflow-scrolling: touch; 
-            border-radius: 5px; 
-            height: 350px; /* Altura fija para que no haya espacios en blanco */
-            background-color: #000; /* Fondo negro por si la foto no cubre todo */
-        }
-        .carrusel img { 
-            scroll-snap-align: center; 
-            min-width: 100%; 
-            height: 100%; 
-            object-fit: cover; /* Esto rellena el espacio sin deformar la foto */
-        }
-        /* Ocultar la barra de scroll fea */
+        /* Carrusel */
+        .carrusel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; border-radius: 5px; height: 350px; background-color: #000; }
+        .carrusel img { scroll-snap-align: center; min-width: 100%; height: 100%; object-fit: cover; }
         .carrusel::-webkit-scrollbar { display: none; }
         .carrusel { -ms-overflow-style: none; scrollbar-width: none; }
-
         .carrusel-hint { text-align: center; font-size: 0.8em; color: #7f8c8d; margin-top: 5px; }
         
         .publicacion iframe { width: 100%; height: 250px; border: none; margin-top: 10px; border-radius: 5px; }
         .fecha-publicacion { font-size: 0.8em; color: #7f8c8d; margin-top: 15px; text-align: right; }
+        
+        /* Botón Flotante WhatsApp */
+        .whatsapp-float { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; text-decoration: none; box-shadow: 2px 2px 10px rgba(0,0,0,0.3); z-index: 999; }
+        
         .btn-custom { border:none; padding:8px 15px; border-radius:4px; cursor:pointer; color:white; margin: 0 5px; }
     </style>
 </head>
 <body>
     <header>
+        <button onclick="toggleDarkMode()" class="btn-dark-mode"><i class="fas fa-moon"></i></button>
         <h2>Escuela Primaria<br>"Prof. José González Villaseñor"</h2>
-        <div class="header-buttons">
+        <img src="logo.png" alt="Logo Escuela" class="logo">
+        <div class="header-icons">
+            <a id="fb-link" href="#" target="_blank"><i class="fab fa-facebook-f"></i></a>
+            <a id="yt-link" href="#" target="_blank"><i class="fab fa-youtube"></i></a>
+            <a id="tk-link" href="#" target="_blank"><i class="fab fa-tiktok"></i></a>
+            <a id="ig-link" href="#" target="_blank"><i class="fab fa-instagram"></i></a>
+        </div>
+        <div class="header-buttons" style="margin-top: 10px;">
             <button id="btn-install" onclick="instalarApp()" class="btn-custom" style="background:#2980b9; display:none;">Instalar App</button>
         </div>
     </header>
+
     <nav>
         <button onclick="showSection('inicio', this)" class="active">INICIO</button>
         <button onclick="showSection('escuela', this)">ESCUELA</button>
@@ -61,12 +88,15 @@
         <button onclick="showSection('artisticas', this)">ARTISTICAS</button>
         <button onclick="showSection('valores', this)">VALORES</button>
     </nav>
-    <div id="inicio" class="content-section active-section"><h2>Bienvenidos</h2><div id="lista-inicio"></div></div>
+
+    <div id="inicio" class="content-section active-section"><h2 id="saludo-inicio">Bienvenidos</h2><div id="lista-inicio"></div></div>
     <div id="escuela" class="content-section"><h2>Nuestra Escuela</h2><div id="lista-escuela"></div></div>
     <div id="docentes" class="content-section"><h2>Personal Docente</h2><div id="lista-docentes"></div></div>
     <div id="avisos" class="content-section"><h2>Avisos Importantes</h2><div id="lista-avisos"></div></div>
     <div id="artisticas" class="content-section"><h2>Actividades Artísticas</h2><div id="lista-artisticas"></div></div>
     <div id="valores" class="content-section"><h2>Valores</h2><div id="lista-valores"></div></div>
+
+    <a href="#" id="wa-btn" class="whatsapp-float" target="_blank"><i class="fab fa-whatsapp"></i></a>
 
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -81,8 +111,43 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
         let deferredPrompt;
+
+        // 1. Saludo Dinámico
+        function setSaludo() {
+            let h = new Date().getHours();
+            let saludo = "Buenas noches";
+            if (h < 12) saludo = "Buenos días";
+            else if (h < 19) saludo = "Buenas tardes";
+            document.getElementById('saludo-inicio').innerText = saludo + ", bienvenidos";
+        }
+
+        // 2. Modo Oscuro
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            let icon = document.querySelector('.btn-dark-mode i');
+            if(document.body.classList.contains('dark-mode')) {
+                icon.classList.remove('fa-moon');
+                icon.classList.add('fa-sun');
+            } else {
+                icon.classList.remove('fa-sun');
+                icon.classList.add('fa-moon');
+            }
+        }
+
+        // 3. Cargar Redes Sociales de Firebase
+        function cargarConfig() {
+            db.collection("configuracion").doc("redes").onSnapshot((doc) => {
+                if(doc.exists) {
+                    const c = doc.data();
+                    if(c.facebook) document.getElementById('fb-link').href = c.facebook;
+                    if(c.youtube) document.getElementById('yt-link').href = c.youtube;
+                    if(c.tiktok) document.getElementById('tk-link').href = c.tiktok;
+                    if(c.instagram) document.getElementById('ig-link').href = c.instagram;
+                    if(c.whatsapp) document.getElementById('wa-btn').href = "https://wa.me/" + c.whatsapp.replace(/[^0-9]/g, '');
+                }
+            });
+        }
 
         function showSection(sectionId, buttonElement) {
             let sections = document.querySelectorAll('.content-section');
@@ -104,16 +169,20 @@
 
         function cargarPublicaciones() {
             db.collection("publicaciones").orderBy("fecha", "desc").onSnapshot((querySnapshot) => {
-                document.getElementById('lista-inicio').innerHTML = '';
-                document.getElementById('lista-escuela').innerHTML = '';
-                document.getElementById('lista-docentes').innerHTML = '';
-                document.getElementById('lista-avisos').innerHTML = '';
-                document.getElementById('lista-artisticas').innerHTML = '';
-                document.getElementById('lista-valores').innerHTML = '';
+                let contenedores = ['inicio', 'escuela', 'docentes', 'avisos', 'artisticas', 'valores'];
+                contenedores.forEach(c => document.getElementById('lista-'+c).innerHTML = '');
 
+                // Arreglo para ordenar: primero los fijados, luego el resto
+                let pubs = [];
                 querySnapshot.forEach((doc) => {
-                    const pub = doc.data();
-                    
+                    let p = doc.data();
+                    p.id = doc.id;
+                    pubs.push(p);
+                });
+                // Ordenar: fijado true primero
+                pubs.sort((a, b) => (b.fijado === true) - (a.fijado === true));
+
+                pubs.forEach((pub) => {
                     let fechaStr = '';
                     if (pub.fecha) {
                         let date = pub.fecha.toDate();
@@ -135,10 +204,7 @@
                         }
                         if(imagenesHtml !== '') {
                             imagenesHtml = `<div class="carrusel">${imagenesHtml}</div>`;
-                            // Si hay más de 1 foto, mostrar indicador de deslizar
-                            if(cantidadFotos > 1) {
-                                imagenesHtml += `<div class="carrusel-hint">Desliza para ver las ${cantidadFotos} fotos ➡️</div>`;
-                            }
+                            if(cantidadFotos > 1) imagenesHtml += `<div class="carrusel-hint">Desliza para ver las ${cantidadFotos} fotos ➡️</div>`;
                         }
                     }
 
@@ -162,9 +228,11 @@
                         pdfHtml = `<iframe src="${pdfSrc}" style="height: 500px;"></iframe>`;
                     }
 
+                    let etiquetaFijado = pub.fijado ? '<span class="etiqueta-fijado">FIJADO</span>' : '';
+
                     let html = `
                         <div class="publicacion">
-                            <p class="titulo-publicacion">${pub.texto}</p>
+                            <p class="titulo-publicacion">${pub.texto} ${etiquetaFijado}</p>
                             ${imagenesHtml}
                             ${videoHtml}
                             ${pdfHtml}
@@ -208,6 +276,8 @@
         }
 
         window.onload = function() {
+            setSaludo();
+            cargarConfig();
             cargarPublicaciones();
         };
     </script>
