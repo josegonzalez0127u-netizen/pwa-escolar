@@ -17,14 +17,32 @@
         
         /* Estilo de la publicación */
         .publicacion { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .titulo-publicacion { font-size: 1.3em; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; } /* Título grande y negrita */
+        .titulo-publicacion { font-size: 1.3em; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; }
         
-        /* Carrusel de imágenes */
-        .carrusel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; border-radius: 5px; }
-        .carrusel img { scroll-snap-align: center; min-width: 100%; height: auto; object-fit: contain; }
+        /* Carrusel de imágenes (Mejorado) */
+        .carrusel { 
+            display: flex; 
+            overflow-x: auto; 
+            scroll-snap-type: x mandatory; 
+            -webkit-overflow-scrolling: touch; 
+            border-radius: 5px; 
+            height: 350px; /* Altura fija para que no haya espacios en blanco */
+            background-color: #000; /* Fondo negro por si la foto no cubre todo */
+        }
+        .carrusel img { 
+            scroll-snap-align: center; 
+            min-width: 100%; 
+            height: 100%; 
+            object-fit: cover; /* Esto rellena el espacio sin deformar la foto */
+        }
+        /* Ocultar la barra de scroll fea */
+        .carrusel::-webkit-scrollbar { display: none; }
+        .carrusel { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .carrusel-hint { text-align: center; font-size: 0.8em; color: #7f8c8d; margin-top: 5px; }
         
         .publicacion iframe { width: 100%; height: 250px; border: none; margin-top: 10px; border-radius: 5px; }
-        .fecha-publicacion { font-size: 0.8em; color: #7f8c8d; margin-top: 10px; text-align: right; } /* Fecha abajo */
+        .fecha-publicacion { font-size: 0.8em; color: #7f8c8d; margin-top: 15px; text-align: right; }
         .btn-custom { border:none; padding:8px 15px; border-radius:4px; cursor:pointer; color:white; margin: 0 5px; }
     </style>
 </head>
@@ -96,19 +114,19 @@
                 querySnapshot.forEach((doc) => {
                     const pub = doc.data();
                     
-                    // Formatear fecha
                     let fechaStr = '';
                     if (pub.fecha) {
                         let date = pub.fecha.toDate();
                         fechaStr = date.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                     }
 
-                    // Construir HTML de imágenes (Carrusel)
                     let imagenesHtml = '';
+                    let cantidadFotos = 0;
                     if(pub.imagenes) {
                         for(let i=1; i<=10; i++) {
                             let url = pub.imagenes['imagenUrl'+i];
                             if(url) {
+                                cantidadFotos++;
                                 let imgSrc = url;
                                 let driveId = extraerDriveId(url);
                                 if (driveId) imgSrc = `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`;
@@ -117,10 +135,13 @@
                         }
                         if(imagenesHtml !== '') {
                             imagenesHtml = `<div class="carrusel">${imagenesHtml}</div>`;
+                            // Si hay más de 1 foto, mostrar indicador de deslizar
+                            if(cantidadFotos > 1) {
+                                imagenesHtml += `<div class="carrusel-hint">Desliza para ver las ${cantidadFotos} fotos ➡️</div>`;
+                            }
                         }
                     }
 
-                    // Construir HTML de Video
                     let videoHtml = '';
                     if(pub.videoUrl) {
                         let videoSrc = pub.videoUrl;
@@ -133,7 +154,6 @@
                         videoHtml = `<iframe src="${videoSrc}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
                     }
 
-                    // Construir HTML de PDF
                     let pdfHtml = '';
                     if(pub.pdfUrl) {
                         let pdfSrc = pub.pdfUrl;
@@ -142,7 +162,6 @@
                         pdfHtml = `<iframe src="${pdfSrc}" style="height: 500px;"></iframe>`;
                     }
 
-                    // Unir todo
                     let html = `
                         <div class="publicacion">
                             <p class="titulo-publicacion">${pub.texto}</p>
