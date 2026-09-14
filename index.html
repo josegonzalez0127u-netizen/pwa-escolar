@@ -14,9 +14,17 @@
         nav button.active { border-bottom: 2px solid #e74c3c; font-weight: bold; }
         .content-section { display: none; padding: 20px; }
         .active-section { display: block; }
+        
+        /* Estilo de la publicación */
         .publicacion { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        .publicacion img { max-width: 100%; border-radius: 5px; margin-top: 10px; }
+        .titulo-publicacion { font-size: 1.3em; font-weight: bold; color: #2c3e50; margin: 0 0 10px 0; } /* Título grande y negrita */
+        
+        /* Carrusel de imágenes */
+        .carrusel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; border-radius: 5px; }
+        .carrusel img { scroll-snap-align: center; min-width: 100%; height: auto; object-fit: contain; }
+        
         .publicacion iframe { width: 100%; height: 250px; border: none; margin-top: 10px; border-radius: 5px; }
+        .fecha-publicacion { font-size: 0.8em; color: #7f8c8d; margin-top: 10px; text-align: right; } /* Fecha abajo */
         .btn-custom { border:none; padding:8px 15px; border-radius:4px; cursor:pointer; color:white; margin: 0 5px; }
     </style>
 </head>
@@ -42,7 +50,6 @@
     <div id="artisticas" class="content-section"><h2>Actividades Artísticas</h2><div id="lista-artisticas"></div></div>
     <div id="valores" class="content-section"><h2>Valores</h2><div id="lista-valores"></div></div>
 
-    <!-- Solo necesitamos Firestore para leer las publicaciones -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script>
@@ -69,6 +76,7 @@
         }
 
         function extraerDriveId(url) {
+            if(!url) return null;
             let match = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
             if (match && match[1]) return match[1];
             match = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
@@ -87,13 +95,33 @@
 
                 querySnapshot.forEach((doc) => {
                     const pub = doc.data();
-                    let html = `<div class="publicacion"><p>${pub.texto}</p>`;
-                    if(pub.imagenUrl) {
-                        let imgSrc = pub.imagenUrl;
-                        let driveId = extraerDriveId(pub.imagenUrl);
-                        if (driveId) imgSrc = `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`;
-                        html += `<img src="${imgSrc}" alt="Imagen">`;
+                    
+                    // Formatear fecha
+                    let fechaStr = '';
+                    if (pub.fecha) {
+                        let date = pub.fecha.toDate();
+                        fechaStr = date.toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                     }
+
+                    // Construir HTML de imágenes (Carrusel)
+                    let imagenesHtml = '';
+                    if(pub.imagenes) {
+                        for(let i=1; i<=10; i++) {
+                            let url = pub.imagenes['imagenUrl'+i];
+                            if(url) {
+                                let imgSrc = url;
+                                let driveId = extraerDriveId(url);
+                                if (driveId) imgSrc = `https://drive.google.com/thumbnail?id=${driveId}&sz=w1000`;
+                                imagenesHtml += `<img src="${imgSrc}" alt="Imagen ${i}">`;
+                            }
+                        }
+                        if(imagenesHtml !== '') {
+                            imagenesHtml = `<div class="carrusel">${imagenesHtml}</div>`;
+                        }
+                    }
+
+                    // Construir HTML de Video
+                    let videoHtml = '';
                     if(pub.videoUrl) {
                         let videoSrc = pub.videoUrl;
                         let ytMatch = pub.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/))([\w-]{11})/);
@@ -102,15 +130,27 @@
                             let driveId = extraerDriveId(pub.videoUrl);
                             if (driveId) videoSrc = `https://drive.google.com/file/d/${driveId}/preview`;
                         }
-                        html += `<iframe src="${videoSrc}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
+                        videoHtml = `<iframe src="${videoSrc}" allow="autoplay; encrypted-media" allowfullscreen></iframe>`;
                     }
+
+                    // Construir HTML de PDF
+                    let pdfHtml = '';
                     if(pub.pdfUrl) {
                         let pdfSrc = pub.pdfUrl;
                         let driveId = extraerDriveId(pub.pdfUrl);
                         if (driveId) pdfSrc = `https://drive.google.com/file/d/${driveId}/preview`;
-                        html += `<iframe src="${pdfSrc}" style="height: 500px;"></iframe>`;
+                        pdfHtml = `<iframe src="${pdfSrc}" style="height: 500px;"></iframe>`;
                     }
-                    html += `</div>`;
+
+                    // Unir todo
+                    let html = `
+                        <div class="publicacion">
+                            <p class="titulo-publicacion">${pub.texto}</p>
+                            ${imagenesHtml}
+                            ${videoHtml}
+                            ${pdfHtml}
+                            <div class="fecha-publicacion">Publicado: ${fechaStr}</div>
+                        </div>`;
 
                     if(pub.seccion === 'inicio') document.getElementById('lista-inicio').innerHTML += html;
                     else if(pub.seccion === 'escuela') document.getElementById('lista-escuela').innerHTML += html;
@@ -122,16 +162,14 @@
             });
         }
 
-        // Registro del Service Worker principal (para que se pueda instalar)
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', function() {
                 navigator.serviceWorker.register('./service-worker.js')
-                    .then(function(registration) { console.log('ServiceWorker registrado con éxito'); })
-                    .catch(function(err) { console.log('Error al registrar ServiceWorker: ', err); });
+                    .then(function(registration) { console.log('ServiceWorker registrado'); })
+                    .catch(function(err) { console.log('Error ServiceWorker: ', err); });
             });
         }
 
-        // Lógica para instalar la App
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
@@ -142,13 +180,11 @@
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 deferredPrompt.userChoice.then((choiceResult) => {
-                    if (choiceResult.outcome === 'accepted') {
-                        document.getElementById('btn-install').style.display = 'none';
-                    }
+                    if (choiceResult.outcome === 'accepted') document.getElementById('btn-install').style.display = 'none';
                     deferredPrompt = null;
                 });
             } else {
-                alert("Para instalar la app, ve al menú de tu navegador (los tres puntitos) y selecciona 'Instalar aplicación'.");
+                alert("Ve al menú de tu navegador (tres puntitos) y selecciona 'Instalar aplicación'.");
             }
         }
 
